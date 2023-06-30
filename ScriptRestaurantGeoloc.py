@@ -31,8 +31,6 @@ data = res.json()
 print(res.status_code)
 #print(res.text)
 
-with open('./full-properties.json', 'w', encoding='utf8') as f:
-    json.dump(data, f, ensure_ascii=False)
 
 # Geolocalisation
 
