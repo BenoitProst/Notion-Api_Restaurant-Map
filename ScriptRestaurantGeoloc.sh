@@ -10,6 +10,6 @@ cd /root/Notion_api/Restaurant_Map/Notion-Api_Restaurant-Map
 
 pip install -r requirements.txt
 
-python ScriptRestaurantGeoloc.py
+python application.py
 
 deactivate
