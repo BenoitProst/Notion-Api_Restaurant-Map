@@ -1,13 +1,20 @@
-from flask import render_template
-import connexion
+from flask import Flask, render_template
+# import connexion
 import pandas as pd
 import folium
 import requests, json
+from geopy.geocoders import Nominatim
+from geopy.geocoders import GoogleV3
+
+from ScriptRestaurantGeoloc import RestaurantGeoloc, updateRestaurantGeoloc
+
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 # Create the application instance
-app = connexion.App(__name__, specification_dir='./')
+app = Flask(__name__)
 
+scheduler = BackgroundScheduler(daemon=True)
 
 #Création de la fonction pour créer les cartes
 def RestaurantCreationMap(databaseID, headers):
@@ -44,6 +51,26 @@ def RestaurantCreationMap(databaseID, headers):
 
     map.save("templates/home.html")
 
+
+# Opening JSON file
+f = open("Param/param.json")
+
+# returns JSON object as 
+# a dictionary
+param = json.load(f)
+
+# Initialisation
+
+token = param['Notion_API']['token']
+databaseID = param['Notion_API']['databaseID']
+headers = {
+    "Authorization": "Bearer " + token,
+    "Content-Type": "application/json",
+    "Notion-Version": "2022-02-22"
+}
+
+
+
 # Create a URL route in our application for "/"
 @app.route('/')
 def home():
@@ -75,4 +102,8 @@ def home():
 
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':
+    
+    scheduler.add_job(id = 'Scheduled Task', func=RestaurantGeoloc, args=[databaseID, headers], trigger='cron', hour='23')
+    scheduler.start()
+    
     app.run(host='0.0.0.0', port=5067, debug=True)
