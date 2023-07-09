@@ -27,9 +27,6 @@ def RestaurantCreationMap(databaseID, headers):
     data = res.json()
     print(res.status_code)
 
-    with open('./full-properties.json', 'w', encoding='utf8') as f:
-        json.dump(data, f, ensure_ascii=False)
-
     ## Création du dataframe
 
     RestaurantAdresseCarte = {'ID':[], "Name" :[], "Adresse" :[], "Lat" :[], "Lon" :[], "Atester_testé" :[], "Style" :[], "Lieu":[]}
