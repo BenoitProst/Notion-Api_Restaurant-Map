@@ -5,6 +5,10 @@ import folium
 import requests, json
 from geopy.geocoders import Nominatim
 from geopy.geocoders import GoogleV3
+from folium import IFrame
+import branca
+from folium import FeatureGroup, LayerControl, Map, Marker
+
 
 from ScriptRestaurantGeoloc import RestaurantGeoloc, updateRestaurantGeoloc
 
@@ -26,12 +30,13 @@ def RestaurantCreationMap(databaseID, headers):
     with open('./full-properties.json', 'w', encoding='utf8') as f:
         json.dump(data, f, ensure_ascii=False)
 
-    RestaurantAdresseCarte = {'ID':[], "Name" :[], "Adresse" :[], "Lat" :[], "Lon" :[]}
+    ## Création du dataframe
 
+    RestaurantAdresseCarte = {'ID':[], "Name" :[], "Adresse" :[], "Lat" :[], "Lon" :[], "Atester_testé" :[], "Style" :[], "Lieu":[]}
 
     for i in range(len(data['results'])):
         if data['results'][i]['properties']['Geoloc']['checkbox'] == True:
-        
+            
             RestaurantAdresseCarte["ID"].append(data['results'][i]['id'])
 
             RestaurantAdresseCarte["Name"].append(data['results'][i]['properties']['Name']['title'][0]['plain_text'])
@@ -41,14 +46,82 @@ def RestaurantCreationMap(databaseID, headers):
             RestaurantAdresseCarte["Lat"].append(data['results'][i]['properties']["Lat"]['number'])
         
             RestaurantAdresseCarte["Lon"].append(data['results'][i]['properties']["Lon"]['number'])
+        
+            RestaurantAdresseCarte["Atester_testé"].append(data['results'][i]['properties']['A tester / testé']['status']['name'])
 
+            RestaurantAdresseCarte["Style"].append(data['results'][i]['properties']['Style']['multi_select'])
+        
+            RestaurantAdresseCarte["Lieu"].append(data['results'][i]['properties']['Lieu']['select']['name'])
+    
     DfRestaurantAdresseCarte = pd.DataFrame.from_dict(RestaurantAdresseCarte)
 
-    map = folium.Map(location=[DfRestaurantAdresseCarte.Lat.mean(), DfRestaurantAdresseCarte.Lon.mean()], zoom_start=14, control_scale=True)
+    # Notion color HEX code
+    NotionColorBG = {'default':'CECDCA',
+                'gray':'EBECED',
+                'brown':'E9E5E3',
+                'orange':'FAEBDD',
+                'yellow':'FBF3DB',
+                'green':'DDEDEA',
+                'blue':'DDEBF1',
+                'purple':'EAE4F2',
+                'pink':'F4DFEB',
+                'red':'FBE4E4'}
+    
+    #Création de la fonction pour les popup
+    def HtmlPopup(location_info):
+        html = """ \
+        <h5>"""+location_info['Name']+"""</h5><p style="line-height: 200%">"""
+    
 
+        for l in range(len(location_info['Style'])):
+            html +="""<mark style="background: #"""
+            html += NotionColorBG[location_info['Style'][l]['color']]
+            html +=""" \
+            !important"> """
+            html += location_info['Style'][l]['name']
+            html += """</mark>"""
+
+        html += """</p>"""
+    
+        return html
+
+
+    map = folium.Map(location=[DfRestaurantAdresseCarte.Lat.mean(), DfRestaurantAdresseCarte.Lon.mean()], zoom_start=14, tiles=None, control_scale=True)
+
+    #Création des layercontrols
+    GroupLieu = DfRestaurantAdresseCarte['Lieu'].drop_duplicates().sort_values().values
+
+    GroupLieuDict ={}
+
+    GroupLieuDict["All"] = FeatureGroup(name="All", overlay=False)
+    folium.TileLayer(tiles='OpenStreetMap', location=[DfRestaurantAdresseCarte.Lat.mean(), DfRestaurantAdresseCarte.Lon.mean()]).add_to(GroupLieuDict["All"])
+    GroupLieuDict["All"].add_to(map)
+
+
+    for i in range(len(GroupLieu)):
+    
+        globals()[f"GroupLieu{i}"] = FeatureGroup(name=GroupLieu[i], overlay=False)
+        location = [DfRestaurantAdresseCarte[DfRestaurantAdresseCarte["Lieu"]==GroupLieu[i]].Lat.mean(), DfRestaurantAdresseCarte[DfRestaurantAdresseCarte["Lieu"]==GroupLieu[i]].Lon.mean()]
+    
+        folium.TileLayer(tiles='OpenStreetMap', loaction=location).add_to(globals()[f"GroupLieu{i}"])
+        GroupLieuDict[GroupLieu[i]] = globals()[f"GroupLieu{i}"]
+        globals()[f"GroupLieu{i}"].add_to(map)
+    
+    
+    #Plotting sur la carte
+    
     for index, location_info in DfRestaurantAdresseCarte.iterrows():
-        folium.Marker([location_info["Lat"], location_info["Lon"]], popup=location_info["Name"]).add_to(map)
-
+        if location_info["Atester_testé"] == "A tester":
+            folium.Marker([location_info["Lat"], location_info["Lon"]], popup=HtmlPopup(location_info), icon=folium.Icon(icon = 'utensils', prefix='fa', color ="lightgray")).add_to(GroupLieuDict["All"])
+            folium.Marker([location_info["Lat"], location_info["Lon"]], popup=HtmlPopup(location_info), icon=folium.Icon(icon = 'utensils', prefix='fa', color ="lightgray")).add_to(GroupLieuDict[location_info['Lieu']])
+    
+        if location_info["Atester_testé"] == "Testé":
+            folium.Marker([location_info["Lat"], location_info["Lon"]], popup=HtmlPopup(location_info), icon=folium.Icon(icon = 'utensils', prefix='fa', color ="green")).add_to(GroupLieuDict["All"])
+            folium.Marker([location_info["Lat"], location_info["Lon"]], popup=HtmlPopup(location_info), icon=folium.Icon(icon = 'utensils', prefix='fa', color ="green")).add_to(GroupLieuDict[location_info['Lieu']])
+        
+        
+    LayerControl().add_to(map)
+    
     map.save("templates/home.html")
 
 
