@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 # import connexion
 import pandas as pd
 import folium
@@ -169,6 +169,84 @@ def home():
     RestaurantCreationMap(databaseID, headers)
 
     return render_template('home.html')
+
+# Create a URL route for restaurant list for "/api/restaurant"
+@app.route('/api/restaurant')
+def APIRestaurant():
+    # Opening JSON file
+    f = open("Param/param.json")
+
+    # returns JSON object as 
+    # a dictionary
+    param = json.load(f)
+
+    # Initialisation
+
+    token = param['Notion_API']['token']
+    databaseID = param['Notion_API']['databaseID']
+    headers = {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "Notion-Version": "2022-02-22"
+    }
+
+
+    readUrl = f"https://api.notion.com/v1/databases/{databaseID}/query"
+    res = requests.request("POST", readUrl, headers=headers)
+    data = res.json()
+    print(res.status_code)
+    #print(res.text)
+
+    json_object = json.dumps(data, indent=4)
+
+    # Writing to sample.json
+    with open("data/notion_list_restaurants.json", "w") as outfile:
+        outfile.write(json_object)
+
+
+
+    #Retraitement du json
+    
+    # Notion color HEX code
+    # Opening JSON file
+    f = open("Param/notioncolor.json")
+
+    # returns JSON object as a dictionary
+    NotionColorBG = json.load(f)
+
+    Restaurant_list = []
+
+    for i in range(len(data['results'])):
+
+        RestaurantInformation = {}
+
+        RestaurantInformation['properties'] = {}
+
+        RestaurantInformation['properties']["id"] = data['results'][i]['id']
+
+        RestaurantInformation['properties']["Name"] = data['results'][i]['properties']['Name']['title'][0]['plain_text']
+
+        RestaurantInformation['properties']["Adresse"] = data['results'][i]['properties']['Adresse']['rich_text'][0]['plain_text']
+
+        RestaurantInformation['properties']["Testé"] = data['results'][i]['properties']['A tester / testé']['status']
+        RestaurantInformation['properties']['Testé'] = NotionColorBG[RestaurantInformation['properties']['Testé']['color']]
+
+        RestaurantInformation['properties']["Lieu"] = data['results'][i]['properties']['Lieu']['select']
+        RestaurantInformation['properties']["Lieu"]['ColorHex'] = NotionColorBG[RestaurantInformation['properties']['Lieu']['color']]
+
+        RestaurantInformation['properties']["Style"] = data['results'][i]['properties']['Style']['multi_select']
+        for l in range(len(RestaurantInformation['properties']["Style"])):
+            RestaurantInformation['properties']["Style"][l]['ColorHex'] = NotionColorBG[RestaurantInformation['properties']["Style"][l]['color']]
+
+        RestaurantInformation['geometry'] = {"type": "Point"}
+        RestaurantInformation['geometry']['coordinates'] =[data['results'][i]['properties']['Lon']['number'],data['results'][0]['properties']['Lat']['number']]
+
+        Restaurant_list.append(RestaurantInformation)
+
+    return jsonify({
+      'status': 'ok', 
+      'data': Restaurant_list
+    })
 
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':
