@@ -1,6 +1,5 @@
 # Anonymisation param
 /Param
 .ipynb_checkpoints
-
-# Anonymisation param
 /data
+.DS_Store
