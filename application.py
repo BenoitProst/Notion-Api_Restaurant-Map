@@ -201,8 +201,8 @@ def APIRestaurant():
     json_object = json.dumps(data, indent=4)
 
     # Writing to sample.json
-    with open("data/notion_list_restaurants.json", "w") as outfile:
-        outfile.write(json_object)
+    # with open("data/notion_list_restaurants.json", "w") as outfile:
+    #   outfile.write(json_object)
 
 
 
