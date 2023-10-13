@@ -8,7 +8,7 @@ from geopy.geocoders import GoogleV3
 from folium import IFrame
 import branca
 from folium import FeatureGroup, LayerControl, Map, Marker
-
+from flask_cors import CORS
 
 from ScriptRestaurantGeoloc import RestaurantGeoloc, updateRestaurantGeoloc
 
@@ -17,6 +17,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 # Create the application instance
 app = Flask(__name__)
+CORS(app)
 
 scheduler = BackgroundScheduler(daemon=True)
 
@@ -171,7 +172,7 @@ def home():
     return render_template('home.html')
 
 # Create a URL route for restaurant list for "/api/restaurant"
-@app.route('/api/restaurant')
+@app.get('/api/restaurant')
 def APIRestaurant():
     # Opening JSON file
     f = open("Param/param.json")
@@ -244,9 +245,7 @@ def APIRestaurant():
         Restaurant_list.append(RestaurantInformation)
 
     return jsonify({
-      'status': 'ok', 
-      'data': Restaurant_list
-    })
+      'data': Restaurant_list})
 
 # If we're running in stand alone mode, run the application
 if __name__ == '__main__':
