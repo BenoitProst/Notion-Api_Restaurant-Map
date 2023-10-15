@@ -240,7 +240,7 @@ def APIRestaurant():
             RestaurantInformation['properties']["Style"][l]['ColorHex'] = NotionColorBG[RestaurantInformation['properties']["Style"][l]['color']]
 
         RestaurantInformation['geometry'] = {"type": "Point"}
-        RestaurantInformation['geometry']['coordinates'] =[data['results'][i]['properties']['Lon']['number'],data['results'][0]['properties']['Lat']['number']]
+        RestaurantInformation['geometry']['coordinates'] =[data['results'][i]['properties']['Lon']['number'],data['results'][i]['properties']['Lat']['number']]
 
         Restaurant_list.append(RestaurantInformation)
 
