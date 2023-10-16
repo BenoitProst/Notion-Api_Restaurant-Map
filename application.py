@@ -253,4 +253,4 @@ if __name__ == '__main__':
     scheduler.add_job(id = 'Scheduled Task', func=RestaurantGeoloc, args=[databaseID, headers], trigger='cron', hour='23')
     scheduler.start()
     
-    app.run(host='0.0.0.0', port=5067, debug=True)
+    app.run(host='0.0.0.0', port=5068, debug=True)
